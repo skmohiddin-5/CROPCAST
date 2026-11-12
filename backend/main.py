@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pathlib import Path
+import os
 import requests
 import joblib
 import pandas as pd
@@ -102,23 +103,21 @@ def predict(village: str, language: str = "en"):
     longitude = location["longitude"]
 
 
-    # 2. Get live weather
+    # 2. Get live weather using WeatherAPI
 
-    weather_url = (
-        "https://api.open-meteo.com/v1/forecast"
-    )
+    api_key = os.getenv("WEATHERAPI_KEY")
+
+    if not api_key:
+        return {
+            "error": "WeatherAPI key is not configured."
+        }
+
+    weather_url = "https://api.weatherapi.com/v1/current.json"
 
     weather_params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": (
-            "temperature_2m,"
-            "relative_humidity_2m,"
-            "surface_pressure,"
-            "wind_speed_10m,"
-            "precipitation"
-        ),
-        "timezone": "auto"
+        "key": api_key,
+        "q": f"{latitude},{longitude}",
+        "aqi": "no"
     }
 
     try:
@@ -127,12 +126,13 @@ def predict(village: str, language: str = "en"):
             params=weather_params,
             timeout=15
         )
-        weather_api_response.raise_for_status()
-        weather_response = weather_api_response.json()
 
+        weather_api_response.raise_for_status()
+
+        weather_response = weather_api_response.json()
         weather = weather_response["current"]
 
-    except (requests.RequestException, KeyError, TypeError) as e:
+    except (requests.RequestException, KeyError, TypeError, ValueError) as e:
         print("WEATHER API ERROR:", repr(e))
 
         if "weather_api_response" in locals():
@@ -146,17 +146,15 @@ def predict(village: str, language: str = "en"):
 
     # 3. Extract weather information
 
-    temperature = weather["temperature_2m"]
-    humidity = weather["relative_humidity_2m"]
-    pressure = weather["surface_pressure"]
-    wind_speed = weather["wind_speed_10m"]
-    precipitation = weather["precipitation"]
-
+    temperature = weather["temp_c"]
+    humidity = weather["humidity"]
+    pressure = weather["pressure_mb"]
+    wind_speed = weather["wind_kph"]
+    precipitation = weather["precip_mm"]
 
     # 4. Determine whether it is raining
 
     rain_today = 1 if precipitation > 0 else 0
-
 
     # 5. Prepare data for ML model
 
@@ -167,7 +165,6 @@ def predict(village: str, language: str = "en"):
         "WindSpeed": wind_speed,
         "RainToday": rain_today
     }])
-
 
     # 6. Make rainfall prediction
 
