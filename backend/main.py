@@ -77,13 +77,13 @@ def predict(village: str, language: str = "en"):
     }
 
     try:
-        response = requests.get(
-            geocoding_url,
-            params=geocoding_params,
+           weather_api_response = requests.get(
+            weather_url,
+            params=weather_params,
             timeout=15
         )
-        response.raise_for_status()
-        location_data = response.json()
+        weather_api_response.raise_for_status()
+        weather_response = weather_api_response.json()
 
     except requests.RequestException:
         return {
@@ -131,7 +131,13 @@ def predict(village: str, language: str = "en"):
 
         weather = weather_response["current"]
 
-    except (requests.RequestException, KeyError, TypeError):
+      except (requests.RequestException, KeyError, TypeError) as e:
+        print("WEATHER API ERROR:", repr(e))
+
+        if "weather_api_response" in locals():
+            print("STATUS CODE:", weather_api_response.status_code)
+            print("RESPONSE:", weather_api_response.text)
+
         return {
             "error": "Weather data is unavailable. Please try again."
         }
