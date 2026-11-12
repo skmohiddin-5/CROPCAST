@@ -77,15 +77,16 @@ def predict(village: str, language: str = "en"):
     }
 
     try:
-           weather_api_response = requests.get(
-            weather_url,
-            params=weather_params,
+        response = requests.get(
+            geocoding_url,
+            params=geocoding_params,
             timeout=15
         )
-        weather_api_response.raise_for_status()
-        weather_response = weather_api_response.json()
+        response.raise_for_status()
+        location_data = response.json()
 
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print("GEOCODING API ERROR:", repr(e))
         return {
             "error": "Location search failed. Please try again."
         }
@@ -121,17 +122,17 @@ def predict(village: str, language: str = "en"):
     }
 
     try:
-        response = requests.get(
+        weather_api_response = requests.get(
             weather_url,
             params=weather_params,
             timeout=15
         )
-        response.raise_for_status()
-        weather_response = response.json()
+        weather_api_response.raise_for_status()
+        weather_response = weather_api_response.json()
 
         weather = weather_response["current"]
 
-      except (requests.RequestException, KeyError, TypeError) as e:
+    except (requests.RequestException, KeyError, TypeError) as e:
         print("WEATHER API ERROR:", repr(e))
 
         if "weather_api_response" in locals():
