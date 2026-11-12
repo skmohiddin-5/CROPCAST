@@ -30,9 +30,12 @@ create_database()
 # Load trained ML model
 # --------------------------------------------------
 
-model = joblib.load("models/rainfall_model.pkl")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-AUDIO_FOLDER = Path("audio")
+MODEL_PATH = BASE_DIR / "models" / "rainfall_model.pkl"
+model = joblib.load(MODEL_PATH)
+
+AUDIO_FOLDER = BASE_DIR / "audio"
 AUDIO_FOLDER.mkdir(exist_ok=True)
 
 
